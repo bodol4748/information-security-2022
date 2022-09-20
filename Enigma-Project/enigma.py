@@ -107,7 +107,7 @@ def rotate_wheels():
     # Wheel 1 rotate everytime when user push the Alpha key
     push_wheel_alpha(0)
     
-    # When the wheel 1's turn is 26, Wheel 2 rotate
+    # When the wheel 1's turn and wheel 1's pos same, Wheel 2 rotate
     for index_of_wheels in range(0, 3) : 
         wheel_I = SETTINGS["WHEEL_POS"][index_of_wheels]
         if wheel_I == SETTINGS["WHEELS"][index_of_wheels]["turn"]:
