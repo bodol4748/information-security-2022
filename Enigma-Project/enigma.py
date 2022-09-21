@@ -87,13 +87,31 @@ def pass_wheels(input, reverse = False):
     # Keep in mind that reflected signals pass wheels in reverse order
 
     # reverse Yes or No
-    wheel_order = SETTINGS["WHEELS"]
+    wheel_order = [2, 1, 0]
     if (reverse) :
-        wheel_order = SETTINGS["WHEELS"].reverse()
+        wheel_order = [0, 1, 2]
     
-    for wheel in wheel_order :
-        input = wheel['wire'][ord(input) - ord('A')]
+    for wheel_num in wheel_order :
+        if (reverse) :
+            wheel = SETTINGS["WHEELS"][wheel_num]
+            # print("it changed " , input , " to ")
+            
+            minus_pos = SETTINGS["WHEEL_POS"][wheel_order[wheel_num-1]]
+            # print("minus_pos is " , minus_pos)
 
+            input = wheel['wire'][ord(input) - ord('A') + SETTINGS["WHEEL_POS"][wheel_num] - minus_pos]
+            input = wheel['wire'][wheel['wire'].find(input)]
+            # print(SETTINGS["WHEEL_POS"][wheel_num] - minus_pos)
+            # print(input)
+        wheel = SETTINGS["WHEELS"][wheel_num]
+        # print("it changed " , input , " to ")
+        
+        minus_pos = SETTINGS["WHEEL_POS"][wheel_order[wheel_num-1]]
+        # print("minus_pos is " , minus_pos)
+
+        input = wheel['wire'][ord(input) - ord('A') + SETTINGS["WHEEL_POS"][wheel_num] - minus_pos]
+        # print(SETTINGS["WHEEL_POS"][wheel_num] - minus_pos)
+        # print(input)
     return input
 
 # UKW
@@ -105,25 +123,25 @@ def rotate_wheels():
     # Implement Wheel Rotation Logics
 
     # Wheel 1 rotate everytime when user push the Alpha key
-    push_wheel_alpha(0)
+    push_wheel_alpha(2)
     
     # When the wheel 1's turn is 26, Wheel 2 rotate
     for index_of_wheels in range(0, 3) : 
-        wheel_I = SETTINGS["WHEEL_POS"][index_of_wheels]
-        if wheel_I == SETTINGS["WHEELS"][index_of_wheels]["turn"]:
-            if index_of_wheels != 2 :
+        wheel_I = SETTINGS["WHEEL_POS"][2 - index_of_wheels]
+        if wheel_I == SETTINGS["WHEELS"][2 - index_of_wheels]["turn"]:
+            if 2 - index_of_wheels != 0 :
                 push_wheel_alpha(index_of_wheels)
 
     pass
 
 def push_wheel_alpha(wheel_I_count) :
-    print(wheel_I_count)
-    wire_alpha = SETTINGS["WHEELS"][wheel_I_count]["wire"] 
-    SETTINGS["WHEELS"][wheel_I_count]["wire"]  = wire_alpha[1:] + wire_alpha[0]
-
+    # print("Now wheel " , wheel_I_count , "is rotating ")
+    # wire_alpha = SETTINGS["WHEELS"][wheel_I_count]["wire"] 
+    # SETTINGS["WHEELS"][wheel_I_count]["wire"]  = wire_alpha[1:] + wire_alpha[0]
+    # print(SETTINGS["WHEELS"][wheel_I_count]["wire"])
     SETTINGS["WHEEL_POS"][wheel_I_count] = SETTINGS["WHEEL_POS"][wheel_I_count] + 1
-    if SETTINGS["WHEEL_POS"][wheel_I_count] == 27 :
-        SETTINGS["WHEEL_POS"][wheel_I_count] == 1
+    if SETTINGS["WHEEL_POS"][wheel_I_count] == 26 :
+        SETTINGS["WHEEL_POS"][wheel_I_count] == 0
 
 # Enigma Exec Start
 plaintext = input("Plaintext to Encode: ")
