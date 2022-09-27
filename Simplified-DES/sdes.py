@@ -58,11 +58,11 @@ def schedule_keys(key: bitarray) -> [bitarray]:
 
     for i in P10:
         permuted_key.append(key[i])
-    print("permuted_key : " , permuted_key)
+    # print("permuted_key : " , permuted_key)
     permuted_key_left = permuted_key[0:5]
     permuted_key_right = permuted_key[5:10]
-    print("permuted_key_left : " , permuted_key_left)
-    print("permuted_key_right : " , permuted_key_right)
+    # print("permuted_key_left : " , permuted_key_left)
+    # print("permuted_key_right : " , permuted_key_right)
 
     for i in range(1, 3):
         # shift for each round
@@ -79,7 +79,7 @@ def schedule_keys(key: bitarray) -> [bitarray]:
             round_key.append(merge_permutation[j])
 
         round_keys.append(round_key)
-    print("round_keys : ", round_keys)
+    # print("round_keys : ", round_keys)
     return round_keys
 
 '''
@@ -91,7 +91,7 @@ def round(text: bitarray, round_key: bitarray) -> bitarray:
     expanded = bitarray()
     for i in EP:
         expanded.append(text[i])
-    print("len of expanded : ", len(expanded), " len of key : ", round_key)
+    # print("len of expanded : ", len(expanded), " len of key : ", round_key)
     expanded ^= round_key
 
     # S0
@@ -121,78 +121,70 @@ mode determines that this function do encryption or decryption.
 '''
 def sdes(text: bitarray, key: bitarray, mode) -> bitarray:
     schedule = schedule_keys(key)
-    print('P8 : ', schedule[0], 'P8 again : ', schedule[1])
+    # print('P8 : ', schedule[0], 'P8 again : ', schedule[1])
     subkey1 = schedule[0]
     subkey2 = schedule[1]
 
     result = bitarray()
 
-    # Initial permutation of text
-    permuted_text = bitarray()
-    for i in range(0, len(IP)):
-        permuted_text.append(text[IP[i]])
-    print("permuted_text : ", permuted_text)
-
-    # First split
-    permuted_text_left = permuted_text[:4]
-    permuted_text_right = permuted_text[4:]
-    print("permuted_text_left : " , permuted_text_left)
-    print("permuted_text_right : " , permuted_text_right)
-
-    # Expand and Permutate Right Half
-    permuted_expend_text_right = bitarray()
-    for i in EP:
-        permuted_expend_text_right.append(permuted_text_right[i])
-    print("permuted_expend_text_right : ", permuted_expend_text_right)
-
-    # XOR on Expanded Right Half
-    text_right_xor_subkey1 = bitarray()
-    for i in range(0, len(subkey1)):
-        xor_result = permuted_expend_text_right[i] ^ subkey1[i]
-        text_right_xor_subkey1.append(xor_result)
-    print("xor result : ", text_right_xor_subkey1 )
-
-    # Split for SBoxes :
-    xor_result_left = text_right_xor_subkey1[:4]
-    xor_result_right = text_right_xor_subkey1[4:]
-
-    # S0 and S1 Box result :
-    s0_num1, s0_num2 = (make_number_for_sbox(xor_result_left, 0))
-    s1_num1, s1_num2 = (make_number_for_sbox(xor_result_right, 1))
-    print("s0_num : ", s0_num1, s0_num2)
-    print("s1_num : ", s1_num1, s1_num2)
-
-    s0_result = s1_or_s2(s0_num1, s0_num2, 0)
-    s1_result = s1_or_s2(s1_num1, s1_num2, 1)
-    print("s0_result : ", s0_result)
-    print("s1_result : ", s1_result)
-    sbox_result = s0_result + s1_result
-
-    # Merge and P4 permutation
-    sbox_in_P4 = bitarray()
-    for i in P4:
-        sbox_in_P4.append(sbox_result[i])
-    print("permuted_text : ", sbox_in_P4)
-
-    # XOR with Left Half and P4
-    left_half_xor_P4 = bitarray()
-    for i in range(0, len(sbox_in_P4)):
-        xor_result = sbox_in_P4[i] ^ permuted_text_left[i]
-        left_half_xor_P4.append(xor_result)
-    print("left_half_xor_P4 : ", left_half_xor_P4)
-
-    # expand and permutate righthalf
-
-    # '''
     # 암호화를 하는 경우
-    # '''
-    # if mode == MODE_ENCRYPT :
-    #
-    #
-    # '''
+    if mode == MODE_ENCRYPT :
+        # Initial permutation of text
+        permuted_text = bitarray()
+        for i in range(0, len(IP)):
+            permuted_text.append(text[IP[i]])
+        # print("permuted_text : ", permuted_text)
+
+        # First split
+        permuted_text_left = permuted_text[:4]
+        permuted_text_right = permuted_text[4:]
+        # print("permuted_text_left : " , permuted_text_left)
+        # print("permuted_text_right : " , permuted_text_right)
+
+        # First Round
+        first_round = round(permuted_text_right, subkey1)
+        temp = permuted_text_right
+        permuted_text_right = permuted_text_left ^ first_round
+        permuted_text_left = temp
+
+        # Second Round
+        second_round = round(permuted_text_right, subkey2)
+        temp_xor = bitarray()
+        for i in range(0, len(second_round)) :
+            temp_xor.append(second_round[i] ^ permuted_text_left[i])
+        total = temp_xor + permuted_text_right
+
+        for i in IP_1 :
+            result.append(total[i])
+
     # 복호화를 하는 경우
-    # '''
-    # else :
+    else :
+        permuted_text = bitarray()
+        for i in range(0, len(IP)):
+            permuted_text.append(text[IP[i]])
+        # print("permuted_text : ", permuted_text)
+
+        # First split
+        permuted_text_left = permuted_text[:4]
+        permuted_text_right = permuted_text[4:]
+        # print("permuted_text_left : ", permuted_text_left)
+        # print("permuted_text_right : ", permuted_text_right)
+
+        # First Round
+        first_round = round(permuted_text_right, subkey2)
+        temp = permuted_text_right
+        permuted_text_right = permuted_text_left ^ first_round
+        permuted_text_left = temp
+
+        # Second Round
+        second_round = round(permuted_text_right, subkey1)
+        temp_xor = bitarray()
+        for i in range(0, len(second_round)) :
+            temp_xor.append(second_round[i] ^ permuted_text_left[i])
+        total = temp_xor + permuted_text_right
+
+        for i in IP_1:
+            result.append(total[i])
 
 
 
@@ -200,20 +192,23 @@ def sdes(text: bitarray, key: bitarray, mode) -> bitarray:
     
     return result
 
-def make_number_for_sbox(half : bitarray, kind) -> list :
-    return [half[0] * 2 + half[3], half[1] * 2 + half[2]]
-
-def s1_or_s2(num1 : int, num2 : int, kindOfS : int) -> bitarray : # num1 이 가로 num2가 세로
-    result = bitarray()
-    if kindOfS == 0 :
-        find_num = S0[num1][num2]
-        result.append(find_num//2)
-        result.append(find_num%2)
-    else :
-        find_num = S1[num1][num2]
-        result.append(find_num//2)
-        result.append(find_num%2)
-    return result
+# def sw(total_bitary : bitarray) -> bitarray :
+#     return total_bitary[4:] + total_bitary[:4]
+#
+# def make_number_for_sbox(half : bitarray, kind) -> list :
+#     return [half[0] * 2 + half[3], half[1] * 2 + half[2]]
+#
+# def s1_or_s2(num1 : int, num2 : int, kindOfS : int) -> bitarray : # num1 이 가로 num2가 세로
+#     result = bitarray()
+#     if kindOfS == 0 :
+#         find_num = S0[num1][num2]
+#         result.append(find_num//2)
+#         result.append(find_num%2)
+#     else :
+#         find_num = S1[num1][num2]
+#         result.append(find_num//2)
+#         result.append(find_num%2)
+#     return result
 
 #### DES Sample Program Start
 
