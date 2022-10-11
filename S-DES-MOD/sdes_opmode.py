@@ -8,6 +8,8 @@ from ctypes import ArgumentError
 import re, random
 from bitarray import bitarray, util as ba_util
 
+from Crypto.Util.Padding import pad, unpad
+
 # Initial Permutation (IP)
 IP = [ 1, 5, 2, 0, 3, 7, 4, 6 ]
 
@@ -46,6 +48,7 @@ P8 = [ 5, 2, 6, 3, 7, 4, 9, 8 ]
 
 MODE_ENCRYPT = 1
 MODE_DECRYPT = 2
+BLOCK_SIZE = 8
 
 '''
 schedule_keys: generate round keys for round function
@@ -148,16 +151,55 @@ def sdes(text: bitarray, key: bitarray, mode) -> bitarray:
 
 
 def sdes_encrypt_ecb(text: bitarray, key: bitarray):
-    pass
+    result = bitarray()
+    if (len(text)%BLOCK_SIZE != 0) :
+        temp_text = text.tobytes()
+        text.clear()
+        text.pack(temp_text)
+    for i in range(0, len(text)//BLOCK_SIZE + 1) :
+        if (i+1)*8 <= len(text) :
+            result += sdes(text[BLOCK_SIZE*i:BLOCK_SIZE*(i+1)], key, MODE_ENCRYPT)
+        
+    return result
 
 def sdes_decrypt_ecb(ciphertext: bitarray, key: bitarray):
-    pass
+    result = bitarray()
+    for i in range(0, len(ciphertext)//BLOCK_SIZE + 1) :
+        if (i+1)*8 <= len(ciphertext) :
+            result += sdes(ciphertext[BLOCK_SIZE*i:BLOCK_SIZE*(i+1)], key, MODE_DECRYPT)
+    return result
 
 def sdes_encrypt_cbc(text: bitarray, key: bitarray, iv:bitarray):
-    pass
+    result = bitarray()
+    before_result = bitarray()
+    if (len(text)%BLOCK_SIZE != 0) :
+        temp_text = text.tobytes()
+        text.clear()
+        text.pack(temp_text)
+    for i in range(0, len(text)//BLOCK_SIZE + 1) :
+        if i == 0 :
+            before_result = sdes(text[BLOCK_SIZE*i:BLOCK_SIZE*(i+1)] ^ iv, key, MODE_ENCRYPT)
+            result += before_result
+            continue
+
+        if (i)*8 < len(text) :
+            before_result = sdes(text[BLOCK_SIZE*i:BLOCK_SIZE*(i+1)] ^ before_result, key, MODE_ENCRYPT)
+            result += before_result
+    return result
 
 def sdes_decrypt_cbc(ciphertext: bitarray, key: bitarray, iv:bitarray):
-    pass
+    result = bitarray()
+    before_block = bitarray()
+
+    for i in range(0, len(ciphertext)//BLOCK_SIZE) :
+        if i == 0 :
+            result += sdes(ciphertext[BLOCK_SIZE*i:BLOCK_SIZE*(i+1)], key, MODE_DECRYPT) ^ iv
+            continue
+
+        if (i)*8 < len(ciphertext) :
+            before_block = ciphertext[BLOCK_SIZE*(i-1):BLOCK_SIZE*(i)]
+            result += sdes(ciphertext[BLOCK_SIZE*i:BLOCK_SIZE*(i+1)], key, MODE_DECRYPT) ^ before_block
+    return result
 
 #### DES Sample Program Start
 
@@ -193,7 +235,7 @@ else:
     print(f"S-DES-ECB SUCCESS!!!")
 
 # now IV will be always 8 bits
-random_iv = bitarray(bin(random.getrandbits(7) + (1 << 8)).replace('0b', ''))
+random_iv = bitarray(bin(random.getrandbits(7) + (1 << 8)).replace('0b', ''))[:8]
 print(f"IV will be random...{random_iv}")
 
 result_encrypt = sdes_encrypt_cbc(bits_plaintext, bits_key, random_iv)
